@@ -1,0 +1,186 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<project name="application_tasks" default="all" basedir=".">
+	<taskdef resource="net/sf/antcontrib/antcontrib.properties"/>
+	<import file="${basedir}/../../../common_targets.xml"/>
+
+	<!--property name="JSB_FILE" value="${basedir}/app.jsb3"/-->
+	<property name="ROOT_DIR" location="${basedir}/../.."/>
+	<property name="LIBS_DIR" value="${ROOT_DIR}/Libs"/>
+	<property name="SDK_PATH" value="${LIBS_DIR}/ext-4.2.2"/>
+	<property name="closure-compiler" value="${ROOT_DIR}/closurecompiler.jar" />
+	<property name="yui-compressor" value="${ROOT_DIR}/yuicompressor.jar" />
+	<property name="BUILDNUMBER_FILE" value="${BUILDNUMBER_DIR}/client-side/${PROJECT_PATH}/buildnumber"/>
+
+	<target name="all" depends="checkforchanges" unless="nochanges">
+	<!--target name="all" depends="checkforchanges"-->
+		<echo>******************************************* BUILDING APPLICATION: ${PROJECT_NAME} *********************************************</echo>
+
+		<antcall target="buildall" />
+	</target>
+
+
+	<target name="buildall" depends="build,move_resources,dos2unix">
+		<ant target="common_targets.increment_buildnumber">
+			<property name="BUILDNUMBER_FILE" value="${BUILDNUMBER_FILE}"/>
+		</ant>
+	</target>
+
+
+	<target name="checkforchanges" depends="prepare" if="checkforchanges.run">
+
+		<exec executable="bash" outputproperty="localecho1">
+			<arg value="-c"/>
+			<arg value="find ${BUILDNUMBER_FILE} -type f -printf '%TY-%Tm-%Td %TT %p\n'"/>
+		</exec>
+		<echo message="${localecho1}" />
+		<exec executable="bash" outputproperty="localecho2">
+			<arg value="-c"/>
+			<arg value="find ${basedir} -type f -printf '%TY-%Tm-%Td %TT %p\n' | sort -n | tail -1"/>
+		</exec>
+		<echo message="${localecho2}" />
+
+		<uptodate property="nochanges" targetfile="${BUILDNUMBER_FILE}">
+			<srcfiles dir="${basedir}" includes="**/*"/>
+		</uptodate>
+	</target>
+
+
+	<target name="prepare">
+		<!--delete dir="${BUILD_DIR}" /-->
+		<mkdir dir="${BUILD_DIR}"/>
+		<fileset dir="${BUILD_DIR}" id="myfileset"/>
+		<pathconvert refid="myfileset" property="builddir.notempty" setonempty="false"/>
+		<condition property="checkforchanges.run">
+			<isset property="builddir.notempty" />
+		</condition>
+	</target>
+
+
+	<target name="build" depends="find-cmd">
+		<echo file="${basedir}/compile-parameters.tmp">
+			union -r -class Paymo.${PROJECT_NAME}.Application
+			and
+			exclude -all
+			and
+			include -namespace Paymo.${PROJECT_NAME}
+			and
+			exclude -tag compiler-helpers
+			and
+			exclude -tag derive
+			and
+			concat
+				-out=${BUILD_DIR}/app.js
+		</echo>
+		<loadfile property="application-compile-parameters" srcFile="${basedir}/compile-parameters.tmp">
+			<filterchain>
+				<striplinecomments>
+				<comment value="#"/>
+				</striplinecomments>
+				<striplinebreaks/>
+			</filterchain>
+		</loadfile>
+		<delete file="${basedir}/compile-parameters.tmp" />
+		<antcall target="sencha-compile">
+			<param name="sdk-path" value="${SDK_PATH}"/>
+			<param name="classpath" value="${basedir}/app,${ROOT_DIR}/Paymo/app,${LIBS_DIR}/ux,${LIBS_DIR}/Skirtle,${LIBS_DIR}/deftjs/src/js/Deft"/>
+			<param name="compile-parameters" value="${application-compile-parameters}"/>
+		</antcall>
+		<antcall target="closure-compile">
+			<param name="src-file" value="${BUILD_DIR}/app.js"/>
+		</antcall>
+
+		<!-- change viewport to panel -->
+		<loadfile property="app.text" srcFile="${BUILD_DIR}/app.min.js">
+			<filterchain>
+				<!--replacestring from='extend:"Ext.container.Viewport"' to='extend:"Ext.panel.Panel"'/-->
+				<replacestring from='Ext.container.Viewport' to='Ext.panel.Panel'/>
+				<replacestring from='Ext.app.Application' to='Paymo.SubApplication'/>
+			</filterchain>
+		</loadfile>
+		<!--echo file="${BUILD_DIR}/app.js">
+		try {${app.text}}
+		catch(error){Paymo.handleError(error);}
+		</echo -->
+		<echo file="${BUILD_DIR}/app.min.js">${app.text}</echo>
+
+		<delete file="${BUILD_DIR}/all-classes.js"/>
+
+		<if>
+			<equals arg1="${application.class.created}" arg2="1"/>
+			<then>
+				<delete file="${basedir}/app/Application.js"/>
+			</then>
+		</if>
+		<ant target="common_targets.move_maps">
+			<property name="src_dir" value="${BUILD_DIR}"/>
+		</ant>
+	</target>
+
+
+	<target name="move_resources">
+		<copy todir="${BUILD_DIR}/resources/css">
+			<fileset dir="${basedir}/resources/css"/>
+		</copy>
+		<copy todir="${BUILD_DIR}/resources/images">
+			<fileset dir="${basedir}/resources/images"/>
+		</copy>
+	</target>
+
+
+	<target name="move_files">
+		<if>
+			<isset  property="MODULE_DIR"/>
+			<then>
+				<copy todir="${MOVE_DESTINATION}/${MODULE_DIR}">
+					<fileset dir="${BUILD_DIR}"/>
+				</copy>
+			</then>
+			<else>
+				<copy todir="${MOVE_DESTINATION}/${PROJECT_NAME}">
+					<fileset dir="${BUILD_DIR}"/>
+				</copy>
+			</else>
+		</if>
+	</target>
+
+
+	<target name="dos2unix">
+		<fixcrlf srcdir="${BUILD_DIR}" includes="**/*.css" eol="unix" encoding="UTF-8" />
+		<fixcrlf srcdir="${BUILD_DIR}" includes="**/*.js" eol="unix" encoding="UTF-8" />
+	</target>
+
+
+	<target name="clean">
+		<delete dir="${BUILD_DIR}"/>
+	</target>
+
+
+	<scriptdef name="substring" language="javascript">
+		<attribute name="text"/>
+		<attribute name="start"/>
+		<attribute name="end"/>
+		<attribute name="property"/>
+		<![CDATA[
+			var text = attributes.get("text");
+			var start = attributes.get("start");
+			var end = attributes.get("end") || text.length();
+			if( start != -1 )
+				project.setProperty(attributes.get("property"), text.substring(start, end));
+			else
+				project.setProperty(attributes.get("property"), '');
+		]]>
+	</scriptdef>
+
+
+	<scriptdef name="indexof" language="javascript">
+		<attribute name="text"/>
+		<attribute name="findme"/>
+		<attribute name="property"/>
+		<![CDATA[
+			var text = attributes.get("text");
+			var findme = attributes.get("findme");
+			project.setProperty(attributes.get("property"), text.indexOf(findme));
+		]]>
+	</scriptdef>
+
+</project>

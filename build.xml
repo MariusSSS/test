@@ -1,0 +1,576 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<project name="clientside" default="all" basedir=".">
+	<taskdef resource="net/sf/antcontrib/antcontrib.propert"/>
+	<import file="${basedir}/../common_targets.xml"/>
+
+	<property name="BUILD_DIR" value="${basedir}/build"/>
+	<!--property name="APPS_BUILD_DIR" value="${basedir}/apps_build"/>
+	<property name="MODULES_BUILD_DIR" value="${basedir}/modules_build"/>
+	<property name="PLUGINS_BUILD_DIR" value="${basedir}/plugins_build"/>
+	<property name="CLIENTPORTAL_BUILD_DIR" value="${basedir}/clientportal_build"/-->
+	<property name="APPS_BUILD_DIR" value="${BUILD_DIR}/apps"/>
+	<property name="MODULES_BUILD_DIR" value="${BUILD_DIR}/modules"/>
+	<property name="PLUGINS_BUILD_DIR" value="${BUILD_DIR}/plugins"/>
+	<property name="CLIENTPORTAL_BUILD_DIR" value="${BUILD_DIR}/clients"/>
+	<property name="PAYMOAPP_BUILD_DIR" value="${BUILD_DIR}/paymoapp"/>
+
+	<!--property name="PRODUCTION_DIR" value="${basedir}/Production/Paymo"/-->
+	<property name="LIBS_DIR" value="${basedir}/Libs"/>
+	<property name="APP_CORE_DIR" location="${basedir}/Paymo/app"/>
+	<property name="ROOT_DIR" location="${basedir}"/>
+	<property name="SDK_PATH" value="${LIBS_DIR}/ext-4.2.2"/>
+	<property name="closure-compiler" value="${ROOT_DIR}/closurecompiler.jar" />
+	<property name="yui-compressor" value="${ROOT_DIR}/yuicompressor.jar" />
+
+	<property name="BUILDNUMBER_FILE" value="${BUILDNUMBER_DIR}/client-side/buildnumber"/>
+	<!--loadproperties srcFile="${BUILDNUMBER_FILE}"/-->
+
+
+	<!-- CLEAN TARGETS -->
+	<target name="clean-core">
+		<delete dir="${BUILD_DIR}/core"/>
+	</target>
+
+
+	<target name="clean-apps">
+		<subant target="clean">
+				<fileset dir="./Applications" includes="*/build.xml"/>
+		</subant>
+	</target>
+
+
+	<target name="clean-modules">
+		<subant target="clean">
+				<fileset dir="./Modules" includes="*/build.xml"/>
+		</subant>
+	</target>
+
+
+	<target name="clean-plugins">
+		<subant target="clean">
+			<fileset dir="./Plugins" includes="*/build.xml"/>
+		</subant>
+	</target>
+
+
+	<target name="clean-clientportal">
+		<exec executable="sencha" dir="${basedir}/ClientPortal">
+			<arg line="ant"/>
+			<arg line="clean"/>
+		</exec>
+		<delete dir="${basedir}/ClientPortal/build"/>
+	</target>
+
+
+	<target name="clean-paymoapp">
+		<exec executable="sencha" dir="${basedir}/PaymoApp">
+			<arg line="ant"/>
+			<arg line="clean"/>
+		</exec>
+		<delete dir="${basedir}/PaymoApp/build"/>
+	</target>
+
+	<target name="clean" depends="clean-core,clean-apps,clean-modules,clean-plugins,clean-clientportal,clean-paymoapp">
+		<delete dir="${BUILD_DIR}"/>
+	</target>
+
+
+	<!-- BUILD TARGETS -->
+	<target name="css_build">
+		<echo>******************************************* Compiling LIBS CSS Files *********************************************</echo>
+
+		<!-- CSS for the invoice/report component, has to sayt in a separate file used by multple parties -->
+		<copy file="${basedir}/Paymo/app/component/invoice/resources/css/main.css" tofile="${BUILD_DIR}/resources/css/invoice.css">
+			<filterchain><replacestring from='../images/' to='../images/invoice/'/></filterchain>
+		</copy>
+		<copy todir="${BUILD_DIR}/resources/images/invoice"><fileset dir="${basedir}/Paymo/app/component/invoice/resources/images"/></copy>
+
+		<copy file="${basedir}/Paymo/app/component/report/resources/css/main.css" tofile="${BUILD_DIR}/resources/css/report.css">
+			<filterchain><replacestring from='../images/' to='../images/report/'/></filterchain>
+		</copy>
+		<copy todir="${BUILD_DIR}/resources/images/report"><fileset dir="${basedir}/Paymo/app/component/report/resources/images"/></copy>
+
+		<!-- css from different libs/components used in main app frontend code  -->
+		<loadfile property="amchartsExport.css" srcFile="${LIBS_DIR}/amcharts_3.14.4/amcharts/plugins/export/export.css"></loadfile>
+		<loadfile property="chartWindow.css" srcFile="${basedir}/Paymo/app/component/chartwindow/resources/css/style.css"></loadfile>
+
+		<loadfile property="baguetteBox.css" srcFile="${LIBS_DIR}/baguette-box/css/baguette-box.css"></loadfile>
+		<loadfile property="ButtonSegment.css" srcFile="${LIBS_DIR}/ux/container/ButtonSegment.css"></loadfile>
+		<loadfile property="BoxSelect.css" srcFile="${LIBS_DIR}/ux/css/BoxSelect.css"></loadfile>
+		<loadfile property="DateRange.css" srcFile="${LIBS_DIR}/ux/daterange/css/daterange.css"></loadfile>
+		<loadfile property="MediumEditor.css" srcFile="${LIBS_DIR}/medium-editor/css/medium-editor.css"></loadfile>
+		<loadfile property="MediumEditorThemePaymo.css" srcFile="${LIBS_DIR}/medium-editor/css/themes/paymo.css"></loadfile>
+
+		<loadfile property="checkheader.css" srcFile="${LIBS_DIR}/ux/css/CheckHeader.css"><filterchain><replacestring from='images/' to='../images/checkheader/'/></filterchain></loadfile><copy todir="${BUILD_DIR}/resources/images/checkheader"><fileset dir="${LIBS_DIR}/ux/css/images"/></copy>
+
+		<loadfile property="ActivityFeed.css" srcFile="${basedir}/Paymo/app/component/activityfeed/resources/css/style.css"></loadfile>
+		<loadfile property="tile.css" srcFile="${basedir}/Paymo/app/component/tile/resources/main.css"></loadfile>
+		<loadfile property="calendar.css" srcFile="${basedir}/Paymo/app/component/calendar/resources/css/calendar.css"><filterchain><replacestring from='/images/' to='/images/calendarcomponent/'/></filterchain></loadfile><copy todir="${BUILD_DIR}/resources/images/calendarcomponent"><fileset dir="${basedir}/Paymo/app/component/calendar/resources/images"/></copy>
+		<loadfile property="wdcalendar.css" srcFile="${basedir}/Paymo/app/component/wdcalendar/resources/css/main.css"></loadfile>
+		<loadfile property="entrycalendar.css" srcFile="${basedir}/Paymo/app/component/entrycalendar/resources/css/main.css"></loadfile>
+		<loadfile property="filterbar1.css" srcFile="${basedir}/Paymo/app/plugin/filterbar/resources/css/app.css"><filterchain><replacestring from='/images/' to='/images/filterbar/'/></filterchain></loadfile>
+		<loadfile property="filterbar2.css" srcFile="${basedir}/Paymo/app/plugin/filterbar/resources/css/overrides.css"><filterchain><replacestring from='/images/' to='/images/filterbar/'/></filterchain></loadfile>
+		<loadfile property="filterbar3.css" srcFile="${basedir}/Paymo/app/plugin/filterbar/resources/css/uxs.css"><filterchain><replacestring from='/images/' to='/images/filterbar/'/></filterchain></loadfile><copy todir="${BUILD_DIR}/resources/images/filterbar"><fileset dir="${basedir}/Paymo/app/plugin/filterbar/resources/images"/></copy>
+		<loadfile property="filterbar4.css" srcFile="${basedir}/Paymo/app/component/filterbar/resources/css/style.css"></loadfile>
+
+		<concat destfile="${BUILD_DIR}/resources/css/libs.css">
+			${ButtonSegment.css}
+			${ActivityFeed.css}
+			${BoxSelect.css}
+			${DateRange.css}
+			${amchartsExport.css}
+			${chartWindow.css}
+			${baguetteBox.css}
+			${tile.css}
+			${checkheader.css}
+			${calendar.css}
+			${wdcalendar.css}
+			${entrycalendar.css}
+			${filterbar1.css}
+			${filterbar2.css}
+			${filterbar3.css}
+			${filterbar4.css}
+			${MediumEditor.css}
+			${MediumEditorThemePaymo.css}
+		</concat>
+
+		<script language="javascript">
+			project.setProperty('css-output-file-rel', project.getProperty('BUILD_DIR').replace( project.getProperty('basedir') , ""));
+		</script>
+
+		<!-- minify the libs css file -->
+		<exec executable="java" dir="${basedir}">
+			<arg line="-jar"/>
+			<arg path="${yui-compressor}"/>
+			<arg value="${BUILD_DIR}/resources/css/libs.css" />
+			<arg line="-o"/>
+			<arg value=".css$:.min.css" />
+		</exec>
+		<delete file="${BUILD_DIR}/resources/css/libs.css"/>
+
+		<!-- the main app css -->
+		<condition property="is_windows">
+			<os family="windows"/>
+		</condition>
+		<if>
+			<isset property="is_windows" />
+			<then>
+				<exec executable="cmd" dir="${basedir}/Paymo/packages/default">
+					<arg value="/c"/>
+					<arg value="sencha package build"/>
+				</exec>
+			</then>
+			<else>
+				<exec executable="/bin/sh"  dir="${basedir}/Paymo/packages/default">
+					<arg value="-c" />
+					<arg value="sencha package build" />
+				</exec>
+			</else>
+		</if>
+		<concat destfile="${BUILD_DIR}/resources/css/default-all.min.css">
+			<filelist dir="${basedir}/Paymo/packages/default/build/resources/" files="default-all_01.css,default-all_02.css,default-all_03.css"/>
+			 <filterchain>
+				<replacestring from='(images/' to='(../images/'/>
+			 </filterchain>
+		</concat>
+		<copy todir="${BUILD_DIR}/resources/images">
+			<fileset dir="${basedir}/Paymo/packages/default/build/resources/images"/>
+			<fileset dir="${basedir}/Paymo/resources/images"/>
+		</copy>
+		<copy todir="${BUILD_DIR}/resources/css/fonts">
+			<fileset dir="${basedir}/Resources/paymo-icons/fonts"/>
+		</copy>
+	</target>
+
+
+	<target name="libs_build" depends="init-sencha">
+		<echo>******************************************* Compiling JS Libs *******************************************</echo>
+		<x-sencha-command>
+			--sdk=${SDK_PATH}
+			compile
+				--classpath=${LIBS_DIR}/ux,${LIBS_DIR}/Skirtle
+				union
+					--r
+					--class=Ext.ux.button.FilterButton,Ext.ux.form.field.ToggleSlide,Ext.ux.form.field.ToggleSlide,Ext.ux.form.field.BoxSelect,Ext.ux.form.field.OperatorButton,Ext.ux.form.field.ClearButton,Ext.ux.form.field.MultiDate,Ext.ux.form.field.InputTextMask,Ext.ux.grid.FilterBar,Ext.ux.grid.RowEditor,Skirtle.CTemplate,Skirtle.grid.column.Component,Ext.ux.grid.column.ActionPro,Ext.ux.container.ButtonSegment,Ext.ux.container.SwitchButtonSegment,Ext.ux.BannedComboItems,Ext.ux.panel.UploadPanel,Ext.ux.ColorField,Ext.ux.CTemplate,Ext.ux.form.plugin.HtmlEditor,Ext.ux.form.field.MultipleSelect,Ext.ux.exporter.ExportButton,Ext.ux.IFrame,Ext.ux.daterange.Date,Ext.ux.daterange.util.Date,Ext.ux.daterange.picker.DateRange,Ext.ux.daterange.field.DateRange,Ext.ux.daterange.field.DateRangeSelection,Ext.ux.form.ItemSelector,
+
+			and
+			exclude
+				--tag=framework
+			and
+			exclude
+				--namespace=Deft
+			and
+			concat
+				-out=${LIBS_DIR}/ux.js
+		</x-sencha-command>
+
+		<x-strip-js srcfile="${LIBS_DIR}/ux.js" />
+
+		<antcall target="closure-compile">
+			<param name="src-file" value="${LIBS_DIR}/ux.js"/>
+			<param name="delete-map-file" value="true" />
+			<param name="delete-src-file" value="true" />
+		</antcall>
+		<antcall target="closure-compile">
+			<param name="src-file" value="${LIBS_DIR}/pathjs/path.mod.js"/>
+			<param name="delete-map-file" value="true" />
+		</antcall>
+		<antcall target="closure-compile">
+			<param name="src-file" value="${APP_CORE_DIR}/../ext_override.js"/>
+			<param name="delete-map-file" value="true" />
+		</antcall>
+		<antcall target="closure-compile">
+			<param name="src-file" value="${LIBS_DIR}/zeroclipboard/ZeroClipboard.js"/>
+			<param name="delete-map-file" value="true" />
+		</antcall>
+		<concat destfile="${BUILD_DIR}/amcharts_exporting.min.js" eol="unix" encoding="utf-8">
+			<filelist dir="${LIBS_DIR}/amcharts_3.14.4/amcharts/plugins/export/" files="export.min.js"/>
+			<!--<filelist dir="${LIBS_DIR}/amcharts_3.14.4/amcharts/plugins/export/libs/pdfmake/" files="pdfmake.js,vfs_fonts.js"/>-->
+			<filelist dir="${LIBS_DIR}/amcharts_3.14.4/amcharts/plugins/export/libs/jszip/" files="jszip.min.js"/>
+			<filelist dir="${LIBS_DIR}/amcharts_3.14.4/amcharts/plugins/export/libs/xlsx/" files="xlsx.min.js"/>
+			<filelist dir="${LIBS_DIR}/amcharts_3.14.4/amcharts/plugins/export/libs/fabric.js/" files="fabric.min.js"/>
+			<filelist dir="${LIBS_DIR}/amcharts_3.14.4/amcharts/plugins/export/libs/FileSaver.js/" files="FileSaver.min.js"/>
+		</concat>
+		<!--<antcall target="closure-compile">-->
+		<!--<param name="src-file" value="${BUILD_DIR}/amcharts_exporting.js"/>-->
+		<!--<param name="delete-map-file" value="true" />-->
+		<!--<param name="delete-src-file" value="true" />-->
+		<!--</antcall>-->
+
+		<!-- Change libs.min.js?v=1 in index.phtml & login.phtml when Adding a new lib!!!!!!!!  -->
+		<concat destfile="${BUILD_DIR}/libs.min.js" eol="unix" encoding="utf-8">
+			<filelist dir="${LIBS_DIR}/deftjs/build/" files="deft.js"/>
+			<filelist dir="${LIBS_DIR}/pathjs/" files="path.mod.min.js"/>
+			<filelist dir="${LIBS_DIR}/medium-editor/js/" files="medium-editor.min.js,overrides.min.js"/>
+			<filelist dir="${LIBS_DIR}/amcharts_3.14.4/amcharts/" files="amcharts.js,serial.js,pie.js"/>
+			<filelist dir="${BUILD_DIR}/" files="amcharts_exporting.min.js" />
+			<filelist dir="${LIBS_DIR}/plupload/2.1.8/js/" files="plupload.full.min.js"/>
+			<filelist dir="${LIBS_DIR}/stomp-websocket/lib/" files="stomp.min.js"/>
+			<filelist dir="${LIBS_DIR}/sockjs-client/dist/" files="sockjs.min.js"/>
+			<filelist dir="${LIBS_DIR}/baguette-box/js/" files="baguetteBox.min.js"/>
+			<filelist dir="${LIBS_DIR}/rxjs/" files="Rx.min.js"/>
+		</concat>
+
+		<concat destfile="${BUILD_DIR}/extlibs.min.js" eol="unix" encoding="utf-8">
+			<filelist dir="${APP_CORE_DIR}/../" files="ext_override.min.js"/>
+			<filelist dir="${LIBS_DIR}/" files="ux.min.js"/>
+			<filelist dir="${LIBS_DIR}/zeroclipboard/" files="ZeroClipboard.min.js"/><!-- why only here works? -->
+		</concat>
+
+		<delete file="${LIBS_DIR}/ux.min.js" />
+		<delete file="${BUILD_DIR}/amcharts_exporting.min.js" />
+		<delete file="${LIBS_DIR}/pathjs/path.mod.min.js"/>
+		<delete file="${APP_CORE_DIR}/../ext_override.min.js" />
+
+		<!--copy file="${LIBS_DIR}/tracekit_ext.js" tofile="${BUILD_DIR}/tracekit_ext.js"/-->
+		<copy file="${SDK_PATH}/ext-all.js" tofile="${BUILD_DIR}/ext-all.min.js" />
+		<copy todir="${BUILD_DIR}/libs/ext/locale">
+			<fileset dir="${SDK_PATH}/locale"/>
+		</copy>
+		<copy file="${LIBS_DIR}/raven-js/dist/1.0.8/raven.min.js" tofile="${BUILD_DIR}/raven.min.js"/>
+
+		<copy file="${LIBS_DIR}/plupload/2.1.8/js/Moxie.swf" tofile="${BUILD_DIR}/libs/plupload/Moxie.swf" />
+		<copy file="${LIBS_DIR}/plupload/2.1.8/js/Moxie.xap" tofile="${BUILD_DIR}/libs/plupload/Moxie.xap" />
+
+		<copy todir="${BUILD_DIR}/libs/amcharts/images">
+			<fileset dir="${LIBS_DIR}/amcharts_3.14.4/amcharts/images"/>
+		</copy>
+		<copy file="${LIBS_DIR}/zeroclipboard/ZeroClipboard.swf" tofile="${BUILD_DIR}/libs/zeroclipboard/ZeroClipboard.swf" />
+	</target>
+
+
+	<target name="paymo_build" depends="init-sencha">
+		<echo>******************************************* Compiling Paymo App *******************************************</echo>
+
+		<x-sencha-command>
+			--sdk=${SDK_PATH}
+			compile
+				--classpath=${APP_CORE_DIR},${LIBS_DIR}/ux,${LIBS_DIR}/Skirtle,${LIBS_DIR}/deftjs/src/js/Deft
+				union
+					--r
+					--class=Paymo.Application
+				and
+				exclude
+					--tag=framework
+				and
+				exclude
+					--namespace=Deft,Ext.ux
+				and
+				concat
+					--out=${BUILD_DIR}/classes-all.js
+		</x-sencha-command>
+
+		<!--replace dir="${BUILD_DIR}">
+			<include name="classes-all.js"/>
+			<replacetoken><![CDATA[return {extend: 'Paymo.model.BaseModel'};]]></replacetoken>
+			<replacevalue><![CDATA[var x = 10;]]></replacevalue>
+		</replace-->
+		<!--replaceregexp file="${BUILD_DIR}/classes-all.js"
+			   match="return \{extend: 'Paymo\.model\.BaseModel'\};"
+			   replace="var x = 10;"
+			   flags="g"
+		/-->
+		<x-strip-js srcfile="${BUILD_DIR}/classes-all.js" />
+		<antcall target="closure-compile">
+			<param name="src-file" value="${BUILD_DIR}/classes-all.js"/>
+		</antcall>
+
+		<!-- antcall target="closure-compile">
+			<param name="src-file" value="${BUILD_DIR}/core.js"/>
+
+		</antcall>
+		<antcall target="closure-compile">
+			<param name="src-file" value="${BUILD_DIR}/models.js"/>
+
+		</antcall>
+		<antcall target="closure-compile">
+			<param name="src-file" value="${BUILD_DIR}/utils.js"/>
+
+		</antcall>
+		<antcall target="closure-compile">
+			<param name="src-file" value="${BUILD_DIR}/plugins.js"/>
+
+		</antcall>
+		<antcall target="closure-compile">
+			<param name="src-file" value="${BUILD_DIR}/features.js"/>
+
+		</antcall>
+		<x-strip-js srcfile="${BUILD_DIR}/components.js" />
+		<antcall target="closure-compile">
+			<param name="src-file" value="${BUILD_DIR}/components.js"/>
+
+		</antcall -->
+
+		<copy file="${basedir}/Paymo/app.js" tofile="${BUILD_DIR}/app.js"/>
+		<copy file="${basedir}/Paymo/base.js" tofile="${BUILD_DIR}/base.js"/>
+
+		<antcall target="closure-compile">
+			<param name="src-file" value="${BUILD_DIR}/app.js"/>
+
+		</antcall>
+		<antcall target="closure-compile">
+			<param name="src-file" value="${BUILD_DIR}/base.js"/>
+
+		</antcall>
+
+		<copy file="${basedir}/Paymo/config.js.sample" tofile="${BUILD_DIR}/config.js" encoding="utf-8" outputencoding="utf-8">
+			<filterchain>
+				<replacetokens>
+					<token key="API_BASE_URL" value="${API_BASE_URL}"/>
+					<token key="APPLICATION_ENV" value="${APPLICATION_ENV}"/>
+					<!--token key="LIBS_PATH" value="${LIBS_PATH}"/-->
+					<token key="APPS_PATH" value="${APPS_PATH}"/>
+					<token key="PLUGINS_PATH" value="${PLUGINS_PATH}"/>
+				</replacetokens>
+			</filterchain>
+		</copy>
+		<antcall target="closure-compile">
+			<param name="src-file" value="${BUILD_DIR}/config.js"/>
+		</antcall>
+		<copy file="${basedir}/Paymo/features-config.js.sample" tofile="${BUILD_DIR}/features-config.js" encoding="utf-8" outputencoding="utf-8">
+		</copy>
+		<antcall target="closure-compile">
+			<param name="src-file" value="${BUILD_DIR}/features-config.js"/>
+		</antcall>
+
+		<!--copy todir="${BUILD_DIR}/data">
+			<fileset dir="${basedir}/Paymo/data"/>
+		</copy-->
+		<copy todir="${BUILD_DIR}/locale">
+			<fileset dir="${basedir}/Locale"/>
+		</copy>
+
+		<ant target="common_targets.move_maps">
+			<property name="src_dir" value="${BUILD_DIR}"/>
+		</ant>
+	</target>
+
+
+	<target name="buildcore" depends="init-sencha">
+		<ant target="css_build"><property name="BUILD_DIR" value="${BUILD_DIR}/core"/></ant>
+		<ant target="libs_build"><property name="BUILD_DIR" value="${BUILD_DIR}/core"/></ant>
+		<ant target="paymo_build"><property name="BUILD_DIR" value="${BUILD_DIR}/core"/></ant>
+		<ant target="dos2unix"><property name="BUILD_DIR" value="${BUILD_DIR}/core"/></ant>
+		<!-- copy file="${basedir}/.htaccess" tofile="${BUILD_DIR}/.htaccess"/ -->
+		<ant target="common_targets.increment_buildnumber"><property name="BUILDNUMBER_FILE" value="${BUILDNUMBER_FILE}"/></ant>
+	</target>
+
+
+	<target name="core">
+
+		<exec executable="bash" outputproperty="localecho1">
+			<arg value="-c"/>
+			<arg value="find ${BUILDNUMBER_FILE} -type f -printf '%TY-%Tm-%Td %TT %p\n'"/>
+		</exec>
+		<echo message="${localecho1}" />
+		<exec executable="bash" outputproperty="localecho2">
+			<arg value="-c"/>
+			<arg value="find ${basedir}/Paymo -type f -printf '%TY-%Tm-%Td %TT %p\n' | sort -n | tail -1"/>
+		</exec>
+		<echo message="${localecho2}" />
+		<exec executable="bash" outputproperty="localecho3">
+			<arg value="-c"/>
+			<arg value="find ${basedir}/Libs -type f -printf '%TY-%Tm-%Td %TT %p\n' | sort -n | tail -1"/>
+		</exec>
+		<echo message="${localecho3}" />
+
+		<uptodate property="nochanges" targetfile="${BUILDNUMBER_FILE}">
+			<srcfiles dir="${basedir}/Paymo" includes="**/*"/>
+			<srcfiles dir="${basedir}/Libs" includes="**/*"/>
+		</uptodate>
+
+		<if>
+			<and>
+				<istrue value="${nochanges}"/>
+				<available file="${BUILD_DIR}/core" type="dir" />
+			</and>
+			<then>
+				<echo>NO CHANGES</echo>
+			</then>
+			<else>
+				<antcall target="clean-core" />
+				<antcall target="buildcore" />
+			</else>
+		</if>
+	</target>
+
+
+	<target name="apps">
+		<subant target="all">
+				<fileset dir="./Applications" includes="*/build.xml"/>
+		</subant>
+	</target>
+
+
+	<target name="modules">
+		<subant target="all">
+				<fileset dir="./Modules" includes="*/build.xml"/>
+		</subant>
+	</target>
+
+
+	<target name="plugins">
+		<subant target="all">
+			<fileset dir="./Plugins" includes="*/build.xml"/>
+		</subant>
+	</target>
+
+
+	<target name="clientportal" >
+
+		<exec executable="bash" outputproperty="localecho4">
+			<arg value="-c"/>
+			<arg value="find ${BUILDNUMBER_DIR}/client-side/ClientPortal/buildnumber -type f -printf '%TY-%Tm-%Td %TT %p\n'"/>
+		</exec>
+		<echo message="${localecho4}" />
+		<exec executable="bash" outputproperty="localecho5">
+			<arg value="-c"/>
+			<arg value="find ${basedir}/ClientPortal -type f -printf '%TY-%Tm-%Td %TT %p\n' | sort -n | tail -1"/>
+		</exec>
+		<echo message="${localecho5}" />
+
+		<uptodate property="nochanges" targetfile="${BUILDNUMBER_DIR}/client-side/ClientPortal/buildnumber">
+			<srcfiles dir="${basedir}/ClientPortal" includes="**/*"/>
+		</uptodate>
+
+		<if>
+			<and>
+				<istrue value="${nochanges}"/>
+				<available file="${basedir}/ClientPortal/build" type="dir" />
+			</and>
+			<then>
+				<echo>NO CHANGES</echo>
+			</then>
+			<else>
+				<antcall target="clean-clientportal" />
+				<exec executable="sencha" dir="${basedir}/ClientPortal">
+					<arg line="app"/>
+					<arg line="build"/>
+					<!--arg line="testing"/-->
+				</exec>
+
+			</else>
+		</if>
+	</target>
+
+
+	<target name="paymoapp" >
+
+		<exec executable="bash" outputproperty="localecho6">
+			<arg value="-c"/>
+			<arg value="find ${BUILDNUMBER_DIR}/client-side/PaymoApp/buildnumber -type f -printf '%TY-%Tm-%Td %TT %p\n'"/>
+		</exec>
+		<echo message="${localecho6}" />
+		<exec executable="bash" outputproperty="localecho7">
+			<arg value="-c"/>
+			<arg value="find ${basedir}/PaymoApp/app -type f -printf '%TY-%Tm-%Td %TT %p\n' | sort -n | tail -1"/>
+		</exec>
+		<echo message="${localecho7}" />
+		<exec executable="bash" outputproperty="localecho8">
+			<arg value="-c"/>
+			<arg value="find ${basedir}/PaymoApp/packages -type f -printf '%TY-%Tm-%Td %TT %p\n' | sort -n | tail -1"/>
+		</exec>
+		<echo message="${localecho8}" />
+
+		<uptodate property="paymoappnochanges" targetfile="${BUILDNUMBER_DIR}/client-side/PaymoApp/buildnumber">
+			<srcfiles dir="${basedir}/PaymoApp/app" includes="**/*" />
+			<srcfiles dir="${basedir}/PaymoApp/packages" includes="**/*" />
+		</uptodate>
+		<if>
+			<and>
+				<istrue value="${paymoappnochanges}"/>
+				<available file="${basedir}/PaymoApp/build" type="dir" />
+			</and>
+			<then>
+				<echo>NO CHANGES</echo>
+			</then>
+			<else>
+				<antcall target="clean-paymoapp" />
+				<exec executable="sencha" dir="${basedir}/PaymoApp">
+					<arg line="app"/>
+					<arg line="build"/>
+					<arg line="-uses"/>
+				</exec>
+			</else>
+		</if>
+	</target>
+
+
+	<target name="all" depends="core,apps,modules,plugins,clientportal,paymoapp">
+
+		<delete dir="${APPS_BUILD_DIR}"/>
+		<subant target="move_files">
+			<property name="MOVE_DESTINATION" value="${APPS_BUILD_DIR}"/>
+			<fileset dir="${basedir}/Applications" includes="*/build.xml"/>
+		</subant>
+
+		<delete dir="${PLUGINS_BUILD_DIR}"/>
+		<subant target="move_files">
+			<property name="MOVE_DESTINATION" value="${PLUGINS_BUILD_DIR}"/>
+			<fileset dir="${basedir}/Plugins" includes="*/build.xml"/>
+		</subant>
+
+		<delete dir="${MODULES_BUILD_DIR}"/>
+		<subant target="move_files">
+			<property name="MOVE_DESTINATION" value="${MODULES_BUILD_DIR}"/>
+			<fileset dir="${basedir}/Modules" includes="*/build.xml"/>
+		</subant>
+
+		<copy todir="${CLIENTPORTAL_BUILD_DIR}">
+			<fileset dir="${basedir}/ClientPortal/build/production/ClientPortal">
+				<include name="*.js" />
+			</fileset>
+		</copy>
+		<copy todir="${PAYMOAPP_BUILD_DIR}">
+			<fileset dir="${basedir}/PaymoApp/build/production/PaymoApp" />
+		</copy>
+	</target>
+
+
+	<!-- UTIL TARGETS -->
+	<target name="dos2unix">
+		<fixcrlf srcdir="${BUILD_DIR}" includes="**/*.css" eol="unix" encoding="utf-8" />
+		<fixcrlf srcdir="${BUILD_DIR}" includes="**/*.js" eol="unix" encoding="utf-8" />
+	</target>
+
+</project>

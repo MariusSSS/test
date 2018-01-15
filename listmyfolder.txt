@@ -1,0 +1,14 @@
+ Volume in drive C is OS
+ Volume Serial Number is 82A8-F616
+
+ Directory of C:\Users\Marius\Desktop\test
+
+01/15/2018  11:38 AM    <DIR>          .
+01/15/2018  11:38 AM    <DIR>          ..
+01/15/2018  10:18 AM             5,834 application_tasks.xml
+01/15/2018  10:18 AM            23,174 build.xml
+01/15/2018  10:18 AM         6,270,124 closurecompiler.jar
+01/15/2018  11:38 AM                 0 listmyfolder.txt
+01/15/2018  10:18 AM             5,768 plugin_tasks.xml
+               5 File(s)      6,304,900 bytes
+               2 Dir(s)  186,916,106,240 bytes free
