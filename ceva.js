@@ -1,1 +1,2 @@
-ceva
+function (){
+	return "nimic"};
